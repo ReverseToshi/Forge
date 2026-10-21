@@ -1,5 +1,10 @@
 
-#include "forge/http/socket.hpp"
+#include "http/socket.hpp"
+#include <sys/socket.h>
+#include <cerrno>
+#include <system_error>
+#include <netinet/in.h>
+#include <unistd.h>
 
 namespace forge::http {
 
@@ -35,10 +40,27 @@ Socket& Socket::operator=(Socket&& other) noexcept
     return *this;
 }
 
-int Socket::get_fd() const noexcept
+[[nodiscard]] int Socket::get() const noexcept
 {
     return fd_;
+}
+
+[[nodiscard]] bool Socket::valid() const noexcept
+{
+    return fd_ != -1;
 
 }
 
+Socket Socket::createTCP()
+{
+    int fd = ::socket(AF_INET, SOCK_STREAM, 0);
+    if (fd == -1) {
+        throw std::system_error(
+            errno, 
+            std::generic_category(), 
+            "Failed to create TCP socket"
+        );
+    }
+    return Socket(fd);
+}
 }

@@ -1,12 +1,13 @@
 
 #include <gtest/gtest.h>
 
-#include "forge/http/socket.hpp"
+#include "http/socket.hpp"
 
 #include <fcntl.h>
 #include <unistd.h>
 #include <cerrno>
 #include <utility>
+#include <sys/socket.h>
 
 TEST(SocketTest, MoveConstructorTransfersOwnership)
 {
@@ -17,8 +18,8 @@ TEST(SocketTest, MoveConstructorTransfersOwnership)
     forge::http::Socket original{fds[0]};
     forge::http::Socket moved{std::move(original)};
 
-    EXPECT_EQ(original.get_fd(), -1);
-    EXPECT_EQ(moved.get_fd(), fds[0]);
+    EXPECT_EQ(original.get(), -1);
+    EXPECT_EQ(moved.get(), fds[0]);
 
     ::close(fds[1]);
 }
@@ -42,4 +43,27 @@ TEST(SocketTest, DestructorClosesDescriptor)
     EXPECT_EQ(errno, EBADF);
 
     ::close(writeFd);
+}
+
+TEST(SocketTest, CreatesTcpSocket)
+{
+    auto socket = forge::http::Socket::createTCP();
+
+    ASSERT_TRUE(socket.valid());
+
+    int type = 0;
+    socklen_t length = sizeof(type);
+
+    ASSERT_EQ(
+        ::getsockopt(
+            socket.get(),
+            SOL_SOCKET,
+            SO_TYPE,
+            &type,
+            &length
+        ),
+        0
+    );
+
+    EXPECT_EQ(type, SOCK_STREAM);
 }

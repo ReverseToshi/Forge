@@ -16,7 +16,10 @@ public:
     Socket(Socket&& other) noexcept;
     Socket& operator=(Socket&& other) noexcept;
 
-    int get_fd() const noexcept;
+    [[nodiscard]] int get() const noexcept;
+    [[nodiscard]] bool valid() const noexcept;
+
+    static Socket createTCP();
 
 private:
     int fd_;
