@@ -8,6 +8,7 @@
 #include <cerrno>
 #include <utility>
 #include <sys/socket.h>
+#include <stdexcept>
 
 TEST(SocketTest, MoveConstructorTransfersOwnership)
 {
@@ -66,4 +67,14 @@ TEST(SocketTest, CreatesTcpSocket)
     );
 
     EXPECT_EQ(type, SOCK_STREAM);
+}
+
+TEST(SocketTest, BindRejectsInvalidIPv4Address)
+{
+    auto socket = forge::http::Socket::createTCP();
+
+    EXPECT_THROW(
+        socket.bind("not-an-ip", 8080),
+        std::invalid_argument
+    );
 }
