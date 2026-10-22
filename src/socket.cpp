@@ -5,6 +5,12 @@
 #include <system_error>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <system_error>
+#include <stdexcept>
+#include <cerrno>
 
 namespace forge::http {
 
@@ -62,5 +68,85 @@ Socket Socket::createTCP()
         );
     }
     return Socket(fd);
+}
+
+void Socket::bind(const char* ip, std::uint16_t port){
+    sockaddr_in addr{};
+
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+
+    const int result = ::inet_pton(
+        AF_INET,
+        ip,
+        &addr.sin_addr
+    );
+
+    if(result==0){
+        throw std::invalid_argument("Invalid IPv4 address");
+    }
+
+    if(result==-1){
+        throw std::system_error(
+            errno,
+            std::system_category(),
+            "inet_pton"
+        );
+    }
+
+    if(::bind(
+        fd_,
+        reinterpret_cast<const sockaddr*>(&addr),
+        sizeof(addr)
+    )==-1){
+        throw std::system_error(
+            errno,
+            std::system_category(),
+            "bind"
+        );
+    }
+}
+
+void Socket::listen(int backlog){
+    if(::listen(fd_, backlog) == -1){
+        throw std::system_error(
+            errno,
+            std::system_category(),
+            "listen"
+        );
+    }
+}
+
+Socket Socket::accept(){
+    int clientFd = ::accept(fd_, nullptr, nullptr);
+
+    if (clientFd == -1) {
+        throw std::system_error(
+            errno,
+            std::system_category(),
+            "accept"
+        );
+    }
+
+    return Socket(clientFd);
+}
+
+ssize_t Socket::receive(char* buffer, std::size_t capacity){
+    const ssize_t bytesReceived = ::recv(
+        fd_,
+        buffer,
+        capacity,
+        0
+    );
+
+    if (bytesReceived == -1) {
+        throw std::system_error(
+            errno,
+            std::system_category(),
+            "recv"
+        );
+    }
+
+    return bytesReceived;
 }
 }

@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <unistd.h>
 
 namespace forge::http {
@@ -20,6 +21,13 @@ public:
     [[nodiscard]] bool valid() const noexcept;
 
     static Socket createTCP();
+
+    void bind(const char* ip, std::uint16_t port);
+    void listen(int backlog=128);
+
+    [[nodiscard]] Socket accept();
+
+    [[nodiscard]] ssize_t receive(char* buffer, std::size_t capacity);
 
 private:
     int fd_;
