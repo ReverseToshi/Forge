@@ -67,6 +67,21 @@ Socket Socket::createTCP()
             "Failed to create TCP socket"
         );
     }
+
+    int reuse = 1;
+    if (::setsockopt(
+        fd,
+        SOL_SOCKET,
+        SO_REUSEADDR,
+        &reuse,
+        sizeof(reuse)
+    )==-1){
+        throw std::system_error(
+            errno,
+            std::system_category(),
+            "setsockopt"
+        );
+    }
     return Socket(fd);
 }
 
@@ -148,5 +163,41 @@ ssize_t Socket::receive(char* buffer, std::size_t capacity){
     }
 
     return bytesReceived;
+}
+
+ssize_t Socket::send(const char* buffer, std::size_t size){
+    const ssize_t bytesSent = ::send(
+        fd_,
+        buffer,
+        size,
+        0
+    );
+
+    if (bytesSent == -1) {
+        throw std::system_error(
+            errno,
+            std::system_category(),
+            "send"
+        );
+    }
+
+    return bytesSent;
+}
+
+void Socket::sendAll(const char* buffer, std::size_t size){
+    std::size_t totalSent = 0;
+
+    while(totalSent<size){
+        const ssize_t bytesSent = send(
+            buffer + totalSent,
+            size - totalSent
+        );
+
+        if(bytesSent == 0){
+            throw std::runtime_error("Socket closed while sending");
+        }
+
+        totalSent += static_cast<std::size_t>(bytesSent);
+    }
 }
 }

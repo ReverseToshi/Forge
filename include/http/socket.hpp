@@ -29,6 +29,10 @@ public:
 
     [[nodiscard]] ssize_t receive(char* buffer, std::size_t capacity);
 
+    [[nodiscard]] ssize_t send(const char* buffer, std::size_t size);
+
+    void sendAll(const char* buffer, std::size_t size);
+
 private:
     int fd_;
 };
